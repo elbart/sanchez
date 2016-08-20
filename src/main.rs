@@ -10,6 +10,7 @@ use pnet::packet::ip::{IpNextHeaderProtocol, IpNextHeaderProtocols};
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::ipv6::Ipv6Packet;
 use pnet::packet::tcp::{TcpPacket, TcpOptionPacket};
+use pnet::packet::udp::{UdpPacket};
 use pnet_macros_support::types::u16be;
 
 use pnet::datalink::{self, NetworkInterface};
@@ -40,11 +41,29 @@ fn handle_tcp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, 
     }
 }
 
+fn handle_udp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8]) {
+    // TODO: make the port filter a commandline option
+    let udp_port: u16 = 80;
+    let udp = UdpPacket::new(packet);
+    if let Some(udp) = udp {
+        if udp.get_destination() == udp_port || udp.get_source() == udp_port {
+            println!("[{}]: UDP Packet: {}:{} > {}:{};", interface_name, source,
+                     udp.get_source(), destination, udp.get_destination()
+            );
+        }
+    } else {
+        println!("[{}]: Malformed UDP Packet", interface_name);
+    }
+}
+
 fn handle_transport_protocol(interface_name: &str, source: IpAddr, destination: IpAddr,
                              protocol: IpNextHeaderProtocol, packet: &[u8]) {
     match protocol {
         IpNextHeaderProtocols::Tcp => {
             handle_tcp_packet(interface_name, source, destination, packet)
+        },
+        IpNextHeaderProtocols::Udp => {
+            handle_udp_packet(interface_name, source, destination, packet)
         },
         _ => println!("[{}]: Unknown {} packet: {} > {}; protocol: {:?} length: {}",
                       interface_name,
