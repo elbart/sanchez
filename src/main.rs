@@ -30,7 +30,8 @@ fn handle_tcp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, 
             let offset: usize = ((tcp.get_data_offset() as usize & 0xF0 >> 4) * 4);
             println!("offset: {}, length: {}", offset, packet.len());
             if offset < packet.len() {
-                println!("{}", std::str::from_utf8(&packet[offset..packet.len()]).unwrap());
+                // TODO amb: panic here
+                // println!("{}", std::str::from_utf8(&packet[offset..packet.len()]).unwrap());
             }
         }
     } else {
