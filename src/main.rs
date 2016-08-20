@@ -16,13 +16,14 @@ use pnet::datalink::{self, NetworkInterface};
 
 fn handle_tcp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8]) {
     // TODO: make the port filter a commandline option
-    let tcp_port: u16be = 8000;
+    let tcp_port: u16 = 80;
     let tcp = TcpPacket::new(packet);
     if let Some(tcp) = tcp {
-        if tcp.get_destination() == tcp_port || tcp.get_source() == tcp_port {
+        if tcp.get_destination() == tcp_port
+            || tcp.get_source() == tcp_port {
             println!("[{}]: TCP Packet: {}:{} > {}:{}; length: {}", interface_name, source,
-                     tcp.get_source(), destination, tcp.get_destination(), tcp.get_data_offset(), 
-                     );
+                     tcp.get_source(), destination, tcp.get_destination(), tcp.get_data_offset(),
+            );
 
             // the offset is the number if 32 bit words
             // found some bitshifting in gor which is "more effective computation"
