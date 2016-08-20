@@ -41,15 +41,19 @@ fn handle_tcp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, 
 fn handle_transport_protocol(interface_name: &str, source: IpAddr, destination: IpAddr,
                              protocol: IpNextHeaderProtocol, packet: &[u8]) {
     match protocol {
-        IpNextHeaderProtocols::Tcp  => handle_tcp_packet(interface_name, source, destination, packet),
+        IpNextHeaderProtocols::Tcp => {
+            handle_tcp_packet(interface_name, source, destination, packet)
+        },
         _ => println!("[{}]: Unknown {} packet: {} > {}; protocol: {:?} length: {}",
-                interface_name,
-                match source { IpAddr::V4(..) => "IPv4", _ => "IPv6" },
-                source,
-                destination,
-                protocol,
-                packet.len())
-
+                      interface_name,
+                      match source {
+                          IpAddr::V4(..) => "IPv4",
+                          _ => "IPv6"
+                      },
+                      source,
+                      destination,
+                      protocol,
+                      packet.len())
     }
 }
 
@@ -81,14 +85,18 @@ fn handle_ipv6_packet(interface_name: &str, ethernet: &EthernetPacket) {
 
 fn handle_packet(interface_name: &str, ethernet: &EthernetPacket) {
     match ethernet.get_ethertype() {
-        EtherTypes::Ipv4 => handle_ipv4_packet(interface_name, ethernet),
-        EtherTypes::Ipv6 => handle_ipv6_packet(interface_name, ethernet),
-        _                => println!("[{}]: Unknown packet: {} > {}; ethertype: {:?} length: {}",
-                                        interface_name,
-                                        ethernet.get_source(),
-                                        ethernet.get_destination(),
-                                        ethernet.get_ethertype(),
-                                        ethernet.packet().len())
+        EtherTypes::Ipv4 => {
+            handle_ipv4_packet(interface_name, ethernet)
+        },
+        EtherTypes::Ipv6 => {
+            handle_ipv6_packet(interface_name, ethernet)
+        },
+        _ => println!("[{}]: Unknown packet: {} > {}; ethertype: {:?} length: {}",
+                      interface_name,
+                      ethernet.get_source(),
+                      ethernet.get_destination(),
+                      ethernet.get_ethertype(),
+                      ethernet.packet().len())
     }
 }
 
@@ -101,22 +109,23 @@ fn main() {
     // Find the network interface with the provided name
     let interfaces = datalink::interfaces();
     let interface = interfaces.into_iter()
-                              .filter(interface_names_match)
-                              .next()
-                              .unwrap();
+        .filter(interface_names_match)
+        .next()
+        .unwrap();
 
     // Create a channel to receive on
     let (_, mut rx) = match datalink::channel(&interface, Default::default()) {
         Ok(Ethernet(tx, rx)) => (tx, rx),
         Ok(_) => panic!("packetdump: unhandled channel type: {}"),
-        Err(e) => panic!("packetdump: unable to create channel: {}", e),
+        Err(e) => panic!("packetdump: unable to create channel: {:?}", e),
     };
 
     let mut iter = rx.iter();
+    println!("listening ...");
     loop {
         match iter.next() {
             Ok(packet) => handle_packet(&interface.name[..], &packet),
-            Err(e) => panic!("packetdump: unable to receive packet: {}", e)
+            Err(e) => panic!("packetdump: unable to receive packet: {:?}", e)
         }
     }
 }
